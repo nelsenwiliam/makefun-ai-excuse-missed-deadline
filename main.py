@@ -29,15 +29,26 @@ def main():
         raise SystemExit("excuse is %d chars, must be 1-160" % len(text))
     if "\n" in text or "\r" in text:
         raise SystemExit("excuse must be a single line")
+    written = None
     for base in ("/output", "."):
         try:
             os.makedirs(base, exist_ok=True)
-            with open(os.path.join(base, "entry.txt"), "w", encoding="utf-8") as f:
+            path = os.path.join(base, "entry.txt")
+            with open(path, "w", encoding="utf-8") as f:
                 f.write(text)
-            return
+            written = path
+            break
         except OSError:
             continue
-    raise SystemExit("no writable output directory")
+    if written is None:
+        raise SystemExit("no writable output directory")
+    # Read the file back: the gate reads exactly these bytes, so confirm
+    # the write round-tripped before reporting success.
+    with open(written, encoding="utf-8") as f:
+        back = f.read()
+    if back != text:
+        raise SystemExit("entry.txt did not round-trip")
+    print("%s (%d chars)" % (text, len(text)))
 
 
 if __name__ == "__main__":
